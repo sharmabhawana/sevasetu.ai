@@ -2,19 +2,21 @@ FROM python:3.11-slim
 
 WORKDIR /workspace
 
-# Install system dependencies
+# System dependencies (psycopg2-binary needs libpq)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev curl \
+        gcc \
+        libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
 COPY requirements-mcp.txt .
 RUN pip install --no-cache-dir -r requirements-mcp.txt
 
-# Copy application files
+# Copy full repo so mcp_common, mcp_citizen, mcp_officer are all importable
 COPY . .
 
 ENV PYTHONPATH=/workspace
 
-# Default command overridden by docker-compose service
+# Default: citizen server. Overridden by render.yaml / docker-compose per service.
 CMD ["python", "-m", "mcp_citizen.server"]
