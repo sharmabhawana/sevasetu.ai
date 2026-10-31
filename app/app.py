@@ -256,6 +256,11 @@ def index():
 @app.route("/about")
 def about():
     return render_template("about.html")
+    
+@app.route("/healthz")
+def healthz():
+    """Simple liveness check for Render. Returns 200 OK."""
+    return "OK", 200
 
 
 @app.route("/__gateway/", defaults={"subpath": ""})
