@@ -1,0 +1,141 @@
+# render.yaml – Seva Setu declarative deployment (Render free tier)
+#
+# Services declared here:
+#   1. db           – PostgreSQL 15 (free plan, 1 GB)
+#   2. portal       – Flask app (Gunicorn, port 8000)
+#   3. citizen-mcp  – FastMCP citizen server (uvicorn, port 8001)
+#   4. officer-mcp  – FastMCP officer server (uvicorn, port 8002)
+#
+# NOTE: There is NO separate nginx proxy service here.
+# The Flask app itself already has /mcp/citizen and /mcp/officer proxy routes
+# (see app/app.py _proxy_mcp_stream), so a single "portal" web service
+# is the only public-facing endpoint. The MCP services run as separate
+# "private services" (internal only) that Flask proxies to.
+# This avoids the free-tier limit on the number of public web services.
+
+services:
+
+  # ── 1. PostgreSQL (managed, free tier) ────────────────────────────────────
+  - type: pserv          # private service (not publicly exposed)
+    name: sevasetu-db
+    plan: free
+    env: docker
+    # Use the official Postgres image – Render's managed Postgres is declared below.
+    # We use a "pserv" with the postgres image so citizen-mcp and officer-mcp
+    # can reach it internally even before Render's managed DB is linked.
+    # If you prefer Render's managed Postgres (recommended for production),
+    # delete this block and create a Postgres resource manually in the UI,
+    # then set DATABASE_URL in the portal/mcp env vars.
+    image: postgres:15-alpine
+    envVars:
+      - key: POSTGRES_DB
+        value: sewasetu
+      - key: POSTGRES_USER
+        value: sewasetu
+      - key: POSTGRES_PASSWORD
+        generateValue: true    # Render generates a strong random password
+    disk:
+      name: pgdata
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
+
+  # ── 2. Flask portal (the only PUBLIC web service) ─────────────────────────
+  - type: web
+    name: sevasetu-portal
+    plan: free
+    env: docker
+    dockerfilePath: ./Dockerfile       # the root-level Dockerfile we just created
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      # --- Database ---------------------------------------------------------
+      - key: DATABASE_URL
+        # Format: postgresql://user:password@host:port/dbname
+        # Replace with your Render Postgres internal URL once the DB is created.
+        value: postgresql://sewasetu:REPLACE_DB_PASSWORD@sevasetu-db:5432/sewasetu
+
+      # --- Flask secrets ----------------------------------------------------
+      - key: SECRET_KEY
+        generateValue: true            # Render generates a secure value for you
+
+      # --- OAuth 2.1 --------------------------------------------------------
+      # Set OAUTH_ISSUER to the EXACT public URL Render gives this service,
+      # e.g. https://sevasetu-portal.onrender.com
+      - key: OAUTH_ISSUER
+        value: https://sevasetu-portal.onrender.com
+      - key: OAUTH_AUDIENCE
+        value: https://sevasetu-portal.onrender.com
+
+      # Paste your RSA private/public key PEM here in the Render UI.
+      # Do NOT commit real keys to Git.
+      - key: JWT_PRIVATE_KEY
+        value: REPLACE_WITH_RSA_PRIVATE_PEM
+      - key: JWT_PUBLIC_KEY
+        value: REPLACE_WITH_RSA_PUBLIC_PEM
+
+      # --- MCP audiences (used by token verifiers) -------------------------
+      - key: CITIZEN_AUDIENCE
+        value: https://sevasetu-portal.onrender.com/mcp/citizen
+      - key: OFFICER_AUDIENCE
+        value: https://sevasetu-portal.onrender.com/mcp/officer
+
+      # --- Internal MCP back-end URLs (Flask proxy uses these) -------------
+      # These point to the private services below using Render's internal DNS.
+      - key: CITIZEN_MCP_BACKEND
+        value: http://sevasetu-citizen-mcp:8001
+      - key: OFFICER_MCP_BACKEND
+        value: http://sevasetu-officer-mcp:8002
+
+      # --- Admin credentials -----------------------------------------------
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: ASSESSOR_USERNAME
+        value: assessor_admin
+      - key: ASSESSOR_PASSWORD
+        generateValue: true
+
+      # --- Misc -------------------------------------------------------------
+      - key: LOG_LEVEL
+        value: INFO
+
+  # ── 3. Citizen MCP (PRIVATE – only reachable by the Flask proxy) ─────────
+  - type: pserv
+    name: sevasetu-citizen-mcp
+    plan: free
+    env: docker
+    dockerfilePath: ./Dockerfile.mcp
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://sewasetu:REPLACE_DB_PASSWORD@sevasetu-db:5432/sewasetu
+      - key: JWT_PUBLIC_KEY
+        value: REPLACE_WITH_RSA_PUBLIC_PEM
+      - key: JWT_ISSUER
+        value: https://sevasetu-portal.onrender.com
+      - key: JWT_AUDIENCE
+        value: https://sevasetu-portal.onrender.com/mcp/citizen
+      - key: LOG_LEVEL
+        value: INFO
+
+  # ── 4. Officer MCP (PRIVATE – only reachable by the Flask proxy) ─────────
+  - type: pserv
+    name: sevasetu-officer-mcp
+    plan: free
+    env: docker
+    dockerfilePath: ./Dockerfile.mcp
+    dockerContext: .
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://sewasetu:REPLACE_DB_PASSWORD@sevasetu-db:5432/sewasetu
+      - key: JWT_PUBLIC_KEY
+        value: REPLACE_WITH_RSA_PUBLIC_PEM
+      - key: JWT_ISSUER
+        value: https://sevasetu-portal.onrender.com
+      - key: JWT_AUDIENCE
+        value: https://sevasetu-portal.onrender.com/mcp/officer
+      - key: LOG_LEVEL
+        value: INFO

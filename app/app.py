@@ -91,6 +91,14 @@ except Exception:
 
 
 def get_db():
+    # On Render (and other PaaS), DATABASE_URL is injected automatically.
+    # We prefer it over the ini-file values so that no secrets are baked into config.
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        # psycopg2 accepts a DSN string directly.
+        # Render issues postgres:// URLs; psycopg2 needs postgresql://.
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(database_url)
     return psycopg2.connect(
         host=config.get("database", "host"),
         port=config.get("database", "port"),
