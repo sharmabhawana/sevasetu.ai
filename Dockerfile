@@ -1,41 +1,49 @@
 # =====================================================================
-# Seva Setu – Flask Portal  (Render deployment Dockerfile)
-# Build context: repository root
-# The Flask application source lives in the app/ sub-directory.
+# Seva Setu – ALL-IN-ONE Dockerfile
+# Runs Flask portal + Citizen MCP + Officer MCP in a single container.
+# This avoids needing separate Render private services.
 # =====================================================================
 FROM python:3.11-slim
 
-# System dependencies needed by psycopg2-binary and fpdf2
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
         gcc \
         libpq-dev \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
 
-# ── 1. Install Flask portal dependencies ──────────────────────────────
+# ── Install Flask portal dependencies ────────────────────────────────
 COPY app/requirements.txt ./requirements-portal.txt
 RUN pip install --no-cache-dir -r requirements-portal.txt
 
-# ── 2. Install MCP / evals dependencies (needed by evals blueprint) ───
+# ── Install MCP dependencies (no pytest at runtime) ──────────────────
 COPY requirements-mcp.txt ./requirements-mcp.txt
-# Remove pytest from mcp requirements – not needed at runtime
 RUN grep -v 'pytest' requirements-mcp.txt > requirements-mcp-prod.txt \
     && pip install --no-cache-dir -r requirements-mcp-prod.txt
 
-# ── 3. Copy the full repository ───────────────────────────────────────
+# ── Copy full repository ──────────────────────────────────────────────
 COPY . .
 
-# Create directories the app writes to
+# Create runtime directories
 RUN mkdir -p /var/sewasetu/uploads /var/log/sewasetu
 
-# Put the workspace on PYTHONPATH so that `from evals.dashboard import ...` works
+# Make startup script executable
+RUN chmod +x /workspace/start.sh
+
+# PYTHONPATH so all modules (evals, mcp_common, etc.) are importable
 ENV PYTHONPATH=/workspace
 
-# Flask/gunicorn run from the app/ directory; app.py exports `app`
-WORKDIR /workspace/app
+# Default env vars (overridden by Render env var settings)
+ENV CITIZEN_MCP_HOST=0.0.0.0
+ENV CITIZEN_MCP_PORT=8001
+ENV OFFICER_MCP_HOST=0.0.0.0
+ENV OFFICER_MCP_PORT=8002
+ENV CITIZEN_MCP_BACKEND=http://127.0.0.1:8001
+ENV OFFICER_MCP_BACKEND=http://127.0.0.1:8002
 
 EXPOSE 8000
 
-# 2 workers is safe on Render's 512 MB free instances
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60", "app:app"]
+# All three processes start from this single script
+CMD ["/workspace/start.sh"]
