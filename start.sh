@@ -14,12 +14,12 @@ echo "==> Starting Seva Setu services..."
 # ── 1. Citizen MCP server (background) ──────────────────────────────
 echo "Starting Citizen MCP on port 8001..."
 cd /workspace
-python -m mcp_citizen.server &
+nohup python -m mcp_citizen.server > /var/log/sewasetu/citizen_mcp.log 2>&1 &
 CITIZEN_PID=$!
 
 # ── 2. Officer MCP server (background) ──────────────────────────────
 echo "Starting Officer MCP on port 8002..."
-python -m mcp_officer.server &
+nohup python -m mcp_officer.server > /var/log/sewasetu/officer_mcp.log 2>&1 &
 OFFICER_PID=$!
 
 # ── 3. Wait briefly for MCP servers to start ────────────────────────
