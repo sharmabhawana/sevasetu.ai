@@ -24,6 +24,17 @@ OFFICER_PID=$!
 
 # ── 3. Wait briefly for MCP servers to start ────────────────────────
 sleep 3
+# Verify MCP services are up (local health check)
+if curl -s -o /dev/null http://127.0.0.1:8001/mcp; then
+  echo "Citizen MCP responded successfully" >> /var/log/sewasetu/startup.log
+else
+  echo "Citizen MCP not reachable" >> /var/log/sewasetu/startup.log
+fi
+if curl -s -o /dev/null http://127.0.0.1:8002/mcp; then
+  echo "Officer MCP responded successfully" >> /var/log/sewasetu/startup.log
+else
+  echo "Officer MCP not reachable" >> /var/log/sewasetu/startup.log
+fi
 
 # ── 4. Flask portal (foreground – this is what Render monitors) ─────
 echo "Starting Flask portal on port 8000..."
