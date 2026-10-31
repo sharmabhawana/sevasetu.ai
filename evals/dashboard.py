@@ -12,7 +12,7 @@ from flask import Blueprint, render_template, jsonify, request
 EVALS_DIR = os.path.dirname(os.path.abspath(__file__))
 RESULTS_FILE = os.path.join(EVALS_DIR, "results.json")
 
-dashboard_bp = Blueprint("eval_dashboard", __name__, template_folder="templates")
+dashboard_bp = Blueprint("eval_dashboard", __name__, template_folder="templates", url_prefix="/eval-dashboard")
 
 
 def load_eval_results():
@@ -40,14 +40,14 @@ def load_eval_results():
     }
 
 
-@dashboard_bp.route("/eval-dashboard")
+@dashboard_bp.route("/", strict_slashes=False)
 def eval_dashboard():
     """Public evaluation dashboard route."""
     data = load_eval_results()
     return render_template("eval_dashboard.html", data=data)
 
 
-@dashboard_bp.route("/api/eval-results")
+@dashboard_bp.route("/api/eval-results", strict_slashes=False)
 def api_eval_results():
     """API endpoint returning structured evaluation results."""
     return jsonify(load_eval_results())
