@@ -1,0 +1,39 @@
+# Environment and secrets
+.env
+*.env
+*.key
+*.pem
+!mcp_common/
+!app/
+
+# Local databases and caches
+test_local.db
+test_*.db
+*.sqlite
+*.sqlite3
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Logs and runtime data
+*.log
+logs/
+var/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini

@@ -1,0 +1,20 @@
+FROM python:3.11-slim
+
+WORKDIR /workspace
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements-mcp.txt .
+RUN pip install --no-cache-dir -r requirements-mcp.txt
+
+# Copy application files
+COPY . .
+
+ENV PYTHONPATH=/workspace
+
+# Default command overridden by docker-compose service
+CMD ["python", "-m", "mcp_citizen.server"]

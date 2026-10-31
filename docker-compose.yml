@@ -1,0 +1,108 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: sewasetu
+      POSTGRES_USER: sewasetu
+      POSTGRES_PASSWORD: sewasetu123
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./app/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./seed/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+
+  app:
+    build: ./app
+    ports:
+      - "8000:8000"
+    environment:
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me-before-deploying}
+      ASSESSOR_USERNAME: ${ASSESSOR_USERNAME:-assessor_admin}
+      ASSESSOR_PASSWORD: ${ASSESSOR_PASSWORD:-SevaSetuAssessor2026!SecureKey}
+      # the address at which people reach this portal; stamped into sign-in tokens and
+      # discovery documents, so it must be the public one when deployed
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+    depends_on:
+      - db
+      - smsgw
+    volumes:
+      - uploads:/var/sewasetu/uploads
+      - applogs:/var/log/sewasetu
+
+  scheduler:
+    build: ./app
+    # Run the deemed-approval job once at startup (so a freshly restored
+    # database is brought up to date), then hand over to cron for the nightly run.
+    command: ["sh", "-c", "until python /app/scripts/deemed_approval.py; do sleep 5; done; exec cron -f"]
+    depends_on:
+      - db
+    volumes:
+      - applogs:/var/log/sewasetu
+
+  smsgw:
+    build: ./smsgw
+    # internal only — reached by the app over the docker network and exposed to
+    # users via the app at /__gateway/ (so no second host port is needed)
+    expose:
+      - "8025"
+
+  mcp-citizen:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    command: ["python", "mcp_citizen/server.py"]
+    ports:
+      - "8001:8001"
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      CITIZEN_MCP_AUDIENCE: ${PUBLIC_BASE_URL:-http://localhost:8000}/mcp/citizen
+      CITIZEN_MCP_PORT: 8001
+      CITIZEN_MCP_HOST: 0.0.0.0
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sewasetu
+      DB_USER: sewasetu
+      DB_PASSWORD: sewasetu123
+    depends_on:
+      - db
+      - app
+    restart: unless-stopped
+
+  mcp-officer:
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+    command: ["python", "mcp_officer/server.py"]
+    ports:
+      - "8002:8002"
+    environment:
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      OFFICER_MCP_AUDIENCE: ${PUBLIC_BASE_URL:-http://localhost:8000}/mcp/officer
+      OFFICER_MCP_PORT: 8002
+      OFFICER_MCP_HOST: 0.0.0.0
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sewasetu
+      DB_USER: sewasetu
+      DB_PASSWORD: sewasetu123
+    depends_on:
+      - db
+      - app
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+      - mcp-citizen
+      - mcp-officer
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:
+  applogs:

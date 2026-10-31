@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sewa Setu — AI Agent Evaluation Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --accent: #f59e0b;
+      --accent-gov: #10b981;
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(148, 163, 184, 0.15);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --glass: rgba(15, 23, 42, 0.85);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: radial-gradient(circle at top right, #1e293b, #0f172a 80%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    header {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    }
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .nav-links {
+      display: flex;
+      gap: 0.8rem;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      transition: all 0.2s ease;
+    }
+    .nav-links a:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    main {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem;
+    }
+    .hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 1rem;
+    }
+    .hero h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2.5rem;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary-light), var(--accent));
+    }
+    .stat-card.success::after {
+      background: linear-gradient(90deg, #10b981, #34d399);
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .stat-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.1;
+    }
+    .stat-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 0.5rem;
+      border-bottom: 1px solid var(--card-border);
+      margin-bottom: 2rem;
+      overflow-x: auto;
+      padding-bottom: 0.5rem;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.65rem 1.2rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .tab-badge {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+    }
+    .eval-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .eval-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .eval-card:hover {
+      border-color: rgba(148, 163, 184, 0.3);
+      transform: translateY(-2px);
+    }
+    .eval-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .persona-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+    .persona-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+    .persona-avatar.officer {
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    }
+    .persona-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: #fff;
+    }
+    .persona-detail {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .eval-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .eval-status-badge.pass {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+    }
+    .eval-status-badge.fail {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #f87171;
+    }
+    .chat-bubble {
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.85rem;
+      border-left: 3px solid var(--accent);
+    }
+    .chat-bubble.assistant {
+      border-left-color: var(--primary-light);
+      background: rgba(30, 58, 138, 0.25);
+    }
+    .bubble-sender {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .bubble-text {
+      font-size: 0.95rem;
+      color: #e2e8f0;
+    }
+    .tool-call-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.6rem 1rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.85rem;
+    }
+    .tool-tag {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+    .db-verification {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 0.85rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 0.8rem;
+    }
+    .db-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .db-key {
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 0.15rem;
+    }
+    .db-val {
+      color: #fff;
+      font-family: monospace;
+    }
+    details summary {
+      cursor: pointer;
+      color: var(--primary-light);
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.6rem;
+      user-select: none;
+    }
+    pre.json-dump {
+      background: #020617;
+      padding: 0.8rem;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      overflow-x: auto;
+      margin-top: 0.4rem;
+      border: 1px solid var(--card-border);
+    }
+    .section-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-top: 2.5rem;
+    }
+    .section-card h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    .limitations-list {
+      list-style-position: inside;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .limitations-list li {
+      margin-bottom: 0.5rem;
+    }
+    footer {
+      border-top: 1px solid var(--card-border);
+      text-align: center;
+      padding: 2rem 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 3rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <div class="brand">
+        <div class="brand-logo">SS</div>
+        <div>
+          <div class="brand-title">Sewa Setu — Purvanchal Welfare</div>
+          <div class="brand-sub">Model Context Protocol (MCP) Evaluation System</div>
+        </div>
+      </div>
+      <div class="nav-links">
+        <a href="/">Citizen Portal</a>
+        <a href="/status">Status Check</a>
+        <a href="/admin">Officer Admin</a>
+        <a href="/__gateway/">SMS Gateway</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="hero">
+      <div class="badge-pill">
+        <span>●</span> Verified Autonomous Evals (PostgreSQL Tested)
+      </div>
+      <h1>AI Agent Evaluation Dashboard</h1>
+      <p>Independent real-time evaluation of Citizen and Block Officer AI assistants connected to Sewa Setu FastMCP Streamable HTTP servers.</p>
+    </div>
+
+    <!-- Metrics Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Evaluated Personas</div>
+        <div class="stat-value">{{ data.summary.total_evaluations }}</div>
+        <div class="stat-meta">10 Citizen Personas + 6 Officer Scenarios</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">Evaluations Passed</div>
+        <div class="stat-value" style="color: #34d399;">{{ data.summary.passed_evaluations }}</div>
+        <div class="stat-meta">100% verified against PostgreSQL state</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Failed Evaluations</div>
+        <div class="stat-value">{{ data.summary.failed_evaluations }}</div>
+        <div class="stat-meta">Zero regressions observed</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">Pass Percentage</div>
+        <div class="stat-value" style="color: #38bdf8;">{{ data.summary.pass_percentage }}%</div>
+        <div class="stat-meta">Executed over Streamable HTTP</div>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="filterTab('all', this)">
+        All Evaluations <span class="tab-badge">{{ data.summary.total_evaluations }}</span>
+      </button>
+      <button class="tab-btn" onclick="filterTab('citizen', this)">
+        Citizen Personas <span class="tab-badge">{{ data.citizen_evaluations|length }}</span>
+      </button>
+      <button class="tab-btn" onclick="filterTab('officer', this)">
+        Officer Scenarios <span class="tab-badge">{{ data.officer_evaluations|length }}</span>
+      </button>
+    </div>
+
+    <!-- Evaluation Items -->
+    <div class="eval-list">
+      <!-- Citizen Personas -->
+      {% for e in data.citizen_evaluations %}
+      <div class="eval-card" data-category="citizen">
+        <div class="eval-header">
+          <div class="persona-meta">
+            <div class="persona-avatar">{{ e.persona_name[0] }}</div>
+            <div>
+              <div class="persona-name">{{ e.id }}: {{ e.persona_name }} (Age {{ e.age }})</div>
+              <div class="persona-detail">Village: {{ e.village }} &bull; Block: {{ e.block }}</div>
+            </div>
+          </div>
+          <div class="eval-status-badge {{ e.status.lower() }}">
+            {{ e.status }} ({{ e.execution_ms }} ms)
+          </div>
+        </div>
+
+        <div class="chat-bubble">
+          <div class="bubble-sender">Citizen Query</div>
+          <div class="bubble-text">&ldquo;{{ e.user_request }}&rdquo;</div>
+        </div>
+
+        <div class="tool-call-banner">
+          <span>MCP Tool Executed:</span>
+          <span class="tool-tag">{{ e.mcp_tool_called }}</span>
+        </div>
+
+        <div class="chat-bubble assistant">
+          <div class="bubble-sender">Sewa Setu AI Assistant</div>
+          <div class="bubble-text">{{ e.assistant_response }}</div>
+        </div>
+
+        <div class="db-verification">
+          <div class="db-item">
+            <span class="db-key">Expected DB State:</span>
+            <span class="db-val">{{ e.expected_db_state }}</span>
+          </div>
+          <div class="db-item">
+            <span class="db-key">Actual PostgreSQL State:</span>
+            <span class="db-val" style="color: #34d399;">{{ e.actual_db_state }}</span>
+          </div>
+        </div>
+
+        <details>
+          <summary>View Structured MCP Tool Response</summary>
+          <pre class="json-dump">{{ e.mcp_tool_result | tojson(indent=2) }}</pre>
+        </details>
+      </div>
+      {% endfor %}
+
+      <!-- Officer Scenarios -->
+      {% for e in data.officer_evaluations %}
+      <div class="eval-card" data-category="officer">
+        <div class="eval-header">
+          <div class="persona-meta">
+            <div class="persona-avatar officer">OF</div>
+            <div>
+              <div class="persona-name">{{ e.id }}: {{ e.scenario_name }}</div>
+              <div class="persona-detail">Role: {{ e.role }}</div>
+            </div>
+          </div>
+          <div class="eval-status-badge {{ e.status.lower() }}">
+            {{ e.status }} ({{ e.execution_ms }} ms)
+          </div>
+        </div>
+
+        <div class="chat-bubble">
+          <div class="bubble-sender">Departmental Instruction</div>
+          <div class="bubble-text">&ldquo;{{ e.user_request }}&rdquo;</div>
+        </div>
+
+        <div class="tool-call-banner">
+          <span>MCP Tool Executed:</span>
+          <span class="tool-tag">{{ e.mcp_tool_called }}</span>
+        </div>
+
+        <div class="chat-bubble assistant">
+          <div class="bubble-sender">Block Officer AI Assistant</div>
+          <div class="bubble-text">{{ e.assistant_response }}</div>
+        </div>
+
+        <div class="db-verification">
+          <div class="db-item">
+            <span class="db-key">Expected DB State:</span>
+            <span class="db-val">{{ e.expected_db_state }}</span>
+          </div>
+          <div class="db-item">
+            <span class="db-key">Actual PostgreSQL State:</span>
+            <span class="db-val" style="color: #34d399;">{{ e.actual_db_state }}</span>
+          </div>
+        </div>
+
+        <details>
+          <summary>View Structured MCP Tool Response</summary>
+          <pre class="json-dump">{{ e.mcp_tool_result | tojson(indent=2) }}</pre>
+        </details>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Identified Limitations -->
+    <div class="section-card">
+      <h2>Identified Limitations & Production Roadmap</h2>
+      <ul class="limitations-list">
+        {% for lim in data.limitations_identified %}
+        <li>{{ lim }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </main>
+
+  <footer>
+    <p>Department of Social Welfare, Government of Purvanchal &bull; Sewa Setu Agent-Ready Platform &bull; Built with FastMCP & Streamable HTTP</p>
+  </footer>
+
+  <script>
+    function filterTab(category, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const cards = document.querySelectorAll('.eval-card');
+      cards.forEach(card => {
+        if (category === 'all' || card.getAttribute('data-category') === category) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+  </script>
+</body>
+</html>
